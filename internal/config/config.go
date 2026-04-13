@@ -10,13 +10,17 @@ const configFileName = ".gatorconfig.json"
 
 // represents the json file structure of the RSS
 type Config struct {
-	URL             string `json:"db_url"`
+	DBurl           string `json:"db_url"`
 	CurrentUserName string `json:"current_user_name"`
 }
 
 func NewConfig() *Config {
 	c := Config{}
 	return &c
+}
+
+func (c *Config) SetDBurl(s string) {
+	c.DBurl = s
 }
 
 func getConfigFilePath() (string, error) {

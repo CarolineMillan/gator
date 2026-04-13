@@ -1,17 +1,25 @@
 package cli
 
+import "github.com/google/uuid"
+
 import (
+	"context"
 	"errors"
 	"fmt"
 	"gator/internal/config"
+	"gator/internal/database"
+	//"os"
+	"time"
 )
 
 type state struct {
+	db  *database.Queries
 	cfg *config.Config
 }
 
-func NewState(cfg *config.Config) *state {
+func NewState(database *database.Queries, cfg *config.Config) *state {
 	s := state{}
+	s.db = database
 	s.cfg = cfg
 	return &s
 }
@@ -59,11 +67,50 @@ func HandlerLogin(s *state, c command) error {
 		return errors.New("login takes one argument. Usage: gator login <username>")
 	}
 
-	err := s.cfg.SetUser(c.args[0])
+	_, err := s.db.GetUser(context.Background(), c.args[0])
+	if err != nil {
+		return fmt.Errorf("Error: user %s doesn't exist.", c.args[0])
+	}
+
+	err = s.cfg.SetUser(c.args[0])
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("User %s has been set successfully.", c.args[0])
+	return nil
+}
+
+func HandlerRegister(s *state, c command) error {
+	//registers a user in the database
+
+	// check that we've been given a name
+	if len(c.args) != 1 {
+		return errors.New("register takes one argument. Usage: gator register <username>")
+	}
+
+	// create a new user in the database
+	params := database.CreateUserParams{}
+	params.Name = c.args[0]
+	params.ID = uuid.New()
+	params.CreatedAt = time.Now()
+	params.UpdatedAt = time.Now()
+	// check that the user doesn't already exist
+	_, err := s.db.CreateUser(context.Background(), params)
+	if err != nil {
+		return fmt.Errorf("Error: couldn't create user %s", params.Name)
+		//os.Exit(1)
+	}
+
+	// update the current user in the config
+	err = s.cfg.SetUser(params.Name)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Success! User %s has been registered in the database.", params.Name)
+
+	fmt.Printf("\nUser's data: %v", params)
+
 	return nil
 }
