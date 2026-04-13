@@ -120,3 +120,21 @@ func HandlerReset(s *state, c command) error {
 	err := s.db.ResetDatabase(context.Background())
 	return err
 }
+
+func HandlerUsers(s *state, c command) error {
+	// prints a list of all users in the database
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(users); i++ {
+		if s.cfg.CurrentUserName == users[i].Name {
+			fmt.Printf("* %s (current)\n", users[i].Name)
+		} else {
+			fmt.Printf("* %s\n", users[i].Name)
+		}
+	}
+
+	return nil
+}
