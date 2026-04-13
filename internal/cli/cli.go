@@ -98,7 +98,7 @@ func HandlerRegister(s *state, c command) error {
 	// check that the user doesn't already exist
 	_, err := s.db.CreateUser(context.Background(), params)
 	if err != nil {
-		return fmt.Errorf("Error: couldn't create user %s", params.Name)
+		return fmt.Errorf("Error: couldn't create user %s. Possibly already exists.", params.Name)
 		//os.Exit(1)
 	}
 
@@ -113,4 +113,10 @@ func HandlerRegister(s *state, c command) error {
 	fmt.Printf("\nUser's data: %v", params)
 
 	return nil
+}
+
+func HandlerReset(s *state, c command) error {
+	// resets the database, i.e. removes all data from the database
+	err := s.db.ResetDatabase(context.Background())
+	return err
 }
