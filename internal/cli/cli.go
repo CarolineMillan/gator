@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"gator/internal/config"
 	"gator/internal/database"
+	"gator/internal/rss"
 	//"os"
 	"time"
 )
@@ -96,7 +97,7 @@ func HandlerRegister(s *state, c command) error {
 	params.CreatedAt = time.Now()
 	params.UpdatedAt = time.Now()
 	// check that the user doesn't already exist
-	_, err := s.db.CreateUser(context.Background(), params)
+	user, err := s.db.CreateUser(context.Background(), params)
 	if err != nil {
 		return fmt.Errorf("Error: couldn't create user %s. Possibly already exists.", params.Name)
 		//os.Exit(1)
@@ -108,9 +109,12 @@ func HandlerRegister(s *state, c command) error {
 		return err
 	}
 
-	fmt.Printf("Success! User %s has been registered in the database.", params.Name)
+	fmt.Printf("Success! User %s has been registered in the database.User's data:\n", params.Name)
 
-	fmt.Printf("\nUser's data: %v", params)
+	fmt.Printf("ID: %v\n", user.ID)
+	fmt.Printf("CreatedAt: %v\n", user.CreatedAt)
+	fmt.Printf("UpdatedAt: %v\n", user.UpdatedAt)
+	fmt.Printf("Name: %v\n", user.Name)
 
 	return nil
 }
@@ -135,6 +139,62 @@ func HandlerUsers(s *state, c command) error {
 			fmt.Printf("* %s\n", users[i].Name)
 		}
 	}
+
+	return nil
+}
+
+func HandlerAgg(s *state, c command) error {
+	// currently fetches the feed for https://www.wagslane.dev/index.xml
+
+	url := "https://www.wagslane.dev/index.xml"
+
+	feed, err := rss.FetchFeed(context.Background(), url)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Print(feed)
+
+	return nil
+}
+
+func HandlerAddFeed(s *state, c command) error {
+	// add a feed to the database
+
+	// get current user
+	current_user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return err
+	}
+
+	// add feed at url to feeds, under current user
+	// check that we've been given a name and url
+	if len(c.args) != 2 {
+		return errors.New("addfeed takes two arguments. Usage: gator addfeed <name> <url>")
+	}
+	// create a new feed in the database
+	params := database.CreateFeedParams{}
+	params.Name = c.args[0]
+	params.Url = c.args[1]
+	params.ID = uuid.New()
+	params.CreatedAt = time.Now()
+	params.UpdatedAt = time.Now()
+	params.UserID = current_user.ID
+	// check that the user doesn't already exist
+	feed, err := s.db.CreateFeed(context.Background(), params)
+	if err != nil {
+		return fmt.Errorf("Error: couldn't create feed %s. Possibly already exists.", params.Name)
+		//os.Exit(1)
+	}
+
+	fmt.Printf("Success! Feed added to the database:\n")
+	fmt.Printf("ID: %v\n", feed.ID)
+	fmt.Printf("CreatedAt: %v\n", feed.CreatedAt)
+	fmt.Printf("UpdatedAt: %v\n", feed.UpdatedAt)
+	fmt.Printf("Name: %v\n", feed.Name)
+	fmt.Printf("URL: %v\n", feed.Url)
+	fmt.Printf("UserID: %v\n", feed.UserID)
 
 	return nil
 }

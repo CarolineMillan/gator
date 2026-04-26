@@ -33,6 +33,8 @@ func main() {
 	err = cmds.Register("register", cli.HandlerRegister)
 	err = cmds.Register("reset", cli.HandlerReset)
 	err = cmds.Register("users", cli.HandlerUsers)
+	err = cmds.Register("agg", cli.HandlerAgg)
+	err = cmds.Register("addfeed", cli.HandlerAddFeed)
 
 	// get a handle on the args
 	args := os.Args
