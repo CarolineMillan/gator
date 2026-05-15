@@ -13,6 +13,7 @@ Currently handles commands:
 - ```users```: prints a list of all users in the database
 - ```agg```: currently fetches the feed for ```https://www.wagslane.dev/index.xml```
 - ```addfeed <name> <url>```: adds the feed with ```<name>``` found at ```<url>``` to the current user's feeds
+- ```feeds```: prints a list of all feeds in the database
 
 
 ## NOTES

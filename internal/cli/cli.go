@@ -132,7 +132,7 @@ func HandlerUsers(s *state, c command) error {
 		return err
 	}
 
-	for i := 0; i < len(users); i++ {
+	for i := range users {
 		if s.cfg.CurrentUserName == users[i].Name {
 			fmt.Printf("* %s (current)\n", users[i].Name)
 		} else {
@@ -196,5 +196,22 @@ func HandlerAddFeed(s *state, c command) error {
 	fmt.Printf("URL: %v\n", feed.Url)
 	fmt.Printf("UserID: %v\n", feed.UserID)
 
+	return nil
+}
+
+func HandlerListFeeds(s *state, c command) error {
+	// prints a list of all feeds in the database
+	feeds, err := s.db.GetFeeds(context.Background())
+	if err != nil {
+		return err
+	}
+
+	for i := range feeds {
+		user, err := s.db.GetUserByID(context.Background(), feeds[i].UserID)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("* %s | %s | %s\n", feeds[i].Name, feeds[i].Url, user.Name)
+	}
 	return nil
 }
