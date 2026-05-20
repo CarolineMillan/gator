@@ -11,7 +11,7 @@ Currently handles commands:
 - ```login <name>```: sets current user to ```<name>```
 - ```reset```: removes all users from the database (DANGER: THIS IS IRREVERSIBLE)
 - ```users```: prints a list of all users in the database
-- ```agg```: currently fetches the feed for ```https://www.wagslane.dev/index.xml```
+- ```agg <duration>```: fetches the feeds and prints the posts to the console. Reruns every ```<duration>``` (eg '1s' or '1m' or '1h')
 - ```addfeed <name> <url>```: adds the feed with ```<name>``` found at ```<url>``` to the current user's feeds
 - ```feeds```: prints a list of all feeds in the database
 - ```follow <url>```: follows the feed at ```<url>``` for the current user

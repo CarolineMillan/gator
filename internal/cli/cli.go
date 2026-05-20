@@ -146,15 +146,31 @@ func HandlerUsers(s *state, c command) error {
 func HandlerAgg(s *state, c command) error {
 	// currently fetches the feed for https://www.wagslane.dev/index.xml
 
-	url := "https://www.wagslane.dev/index.xml"
+	// check that we've been given a duration
+	if len(c.args) != 1 {
+		return errors.New("agg takes one argument. Usage: gator agg <duration>. Duration is a time.Duration value, eg 1s, 1m, 1h.")
+	}
 
-	feed, err := rss.FetchFeed(context.Background(), url)
-
+	duration, err := time.ParseDuration(c.args[0])
 	if err != nil {
 		return err
 	}
 
-	fmt.Print(feed)
+	fmt.Printf("Printing feeds every %v\n", duration)
+
+	//url := "https://www.wagslane.dev/index.xml"
+
+	ticker := time.NewTicker(duration)
+	for ; ; <-ticker.C {
+		err = ScrapeFeeds(s)
+		if err != nil {
+			return err
+		}
+	}
+
+	//feed, err := rss.FetchFeed(context.Background(), url)
+
+	//fmt.Print(feed)
 
 	return nil
 }
@@ -297,6 +313,25 @@ func HandlerUnfollow(s *state, c command, user database.User) error {
 		return err
 	}
 
+	return nil
+}
+
+func ScrapeFeeds(s *state) error {
+
+	// Get the next feed to fetch from the DB.
+	next, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return err
+	}
+
+	// Mark it as fetched.
+	err = s.db.MarkFeedFetched(context.Background(), next.ID)
+	// Fetch the feed using the URL
+	feed, err := rss.FetchFeed(context.Background(), next.Url)
+	// Iterate over the items in the feed and print their titles to the console.
+	for _, item := range feed.Channel.Item {
+		fmt.Printf("%s\n", item.Title)
+	}
 	return nil
 }
 
