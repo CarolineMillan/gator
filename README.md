@@ -14,8 +14,9 @@ Currently handles commands:
 - ```agg```: currently fetches the feed for ```https://www.wagslane.dev/index.xml```
 - ```addfeed <name> <url>```: adds the feed with ```<name>``` found at ```<url>``` to the current user's feeds
 - ```feeds```: prints a list of all feeds in the database
-- ```follow <url>```: sets current user to follow the feed at ```<url>```
+- ```follow <url>```: follows the feed at ```<url>``` for the current user
 - ```following```: prints a list of all feeds that the current user is following
+- ```unfollow <url>```: unfollows the feed at ```<url>``` for the current user
 
 Uses 3 tables:
 - ```users```: contains information on each user

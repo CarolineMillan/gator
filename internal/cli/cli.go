@@ -226,7 +226,7 @@ func HandlerListFeeds(s *state, c command) error {
 	return nil
 }
 
-func HandlerFollow(s *state, c command, user database.User) error {
+func HandlerFollow(s *state, c command, current_user database.User) error {
 	// takes single url arg and creates a new feed follow record for the current user
 	// check that we've been given a url
 	if len(c.args) != 1 {
@@ -235,12 +235,6 @@ func HandlerFollow(s *state, c command, user database.User) error {
 
 	// get feed record
 	feed, err := s.db.GetFeedsURL(context.Background(), c.args[0])
-	if err != nil {
-		return err
-	}
-
-	// get current user
-	current_user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
 	if err != nil {
 		return err
 	}
@@ -264,14 +258,8 @@ func HandlerFollow(s *state, c command, user database.User) error {
 	return nil
 }
 
-func HandlerFollowing(s *state, c command, user database.User) error {
+func HandlerFollowing(s *state, c command, current_user database.User) error {
 	// returns all feed follows for a given user
-
-	// get current user
-	current_user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return err
-	}
 
 	following, err := s.db.GetFeedFollowsForUser(context.Background(), current_user.ID)
 	if err != nil {
@@ -283,6 +271,32 @@ func HandlerFollowing(s *state, c command, user database.User) error {
 	for _, record := range following {
 		fmt.Printf("%s\n", record.FeedName)
 	}
+	return nil
+}
+
+func HandlerUnfollow(s *state, c command, user database.User) error {
+	// unfollows the feed at given url for current user
+
+	// check that we've been given a url
+	if len(c.args) != 1 {
+		return errors.New("unfollow takes one argument. Usage: gator unfollow <url>")
+	}
+
+	params := database.DeleteFeedFollowsParams{}
+
+	feed, err := s.db.GetFeedsURL(context.Background(), c.args[0])
+	if err != nil {
+		return err
+	}
+	params.FeedID = feed.ID
+
+	params.UserID = user.ID
+
+	err = s.db.DeleteFeedFollows(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
