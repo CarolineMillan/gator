@@ -39,6 +39,7 @@ func main() {
 	err = cmds.Register("follow", cli.MiddlewareLoggedIn(cli.HandlerFollow))
 	err = cmds.Register("following", cli.MiddlewareLoggedIn(cli.HandlerFollowing))
 	err = cmds.Register("unfollow", cli.MiddlewareLoggedIn(cli.HandlerUnfollow))
+	err = cmds.Register("browse", cli.MiddlewareLoggedIn(cli.HandlerBrowse))
 
 	// get a handle on the args
 	args := os.Args

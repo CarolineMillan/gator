@@ -17,11 +17,13 @@ Currently handles commands:
 - ```follow <url>```: follows the feed at ```<url>``` for the current user
 - ```following```: prints a list of all feeds that the current user is following
 - ```unfollow <url>```: unfollows the feed at ```<url>``` for the current user
+- ```browse n```: prints n number of posts to the terminal, most recent posts from feeds the current user is following
 
-Uses 3 tables:
+Uses 4 tables:
 - ```users```: contains information on each user
 - ```feeds```: contains information on each feed
 - ```feed_follows```: a joining table containing information on which feeds a user is following
+- ```posts```: contains posts saved when fetching a feed
 
 ## NOTES
 
@@ -45,3 +47,9 @@ Write queries in the sql/queries folder. This will be a ```.sql``` file containi
 
 To generate the Go code from the queries, run:
 ```sqlc generate```
+
+
+
+I want to select posts from feeds that the user follows
+So I want to select posts with feed_id that user_id=$1 follows
+This will mean looking in the feed_follows table for records with feed_id=feed_id and user_id=$1. Then return all these posts

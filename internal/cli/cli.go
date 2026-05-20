@@ -4,11 +4,14 @@ import "github.com/google/uuid"
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"gator/internal/config"
 	"gator/internal/database"
 	"gator/internal/rss"
+	"github.com/lib/pq"
+	"strconv"
 	//"os"
 	"time"
 )
@@ -316,6 +319,33 @@ func HandlerUnfollow(s *state, c command, user database.User) error {
 	return nil
 }
 
+func HandlerBrowse(s *state, c command, user database.User) error {
+	// prints a list of posts, default limit of 2
+	limit := 2
+	if len(c.args) == 1 {
+		limit, _ = strconv.Atoi(c.args[0])
+	}
+
+	params := database.GetPostsForUserParams{}
+	params.UserID = user.ID
+	params.Limit = int32(limit)
+	posts, err := s.db.GetPostsForUser(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("found %d posts\n", len(posts))
+
+	for _, post := range posts {
+		fmt.Printf("%v\n", post.Title)
+		fmt.Printf("%v\n", post.Url)
+		fmt.Printf("%v\n", post.PublishedAt.Time)
+		fmt.Printf("%v\n", post.Description)
+		fmt.Print("--------------------------------------------------\n")
+	}
+	return nil
+}
+
 func ScrapeFeeds(s *state) error {
 
 	// Get the next feed to fetch from the DB.
@@ -330,7 +360,36 @@ func ScrapeFeeds(s *state) error {
 	feed, err := rss.FetchFeed(context.Background(), next.Url)
 	// Iterate over the items in the feed and print their titles to the console.
 	for _, item := range feed.Channel.Item {
-		fmt.Printf("%s\n", item.Title)
+		// save the posts to the posts database
+		params := database.CreatePostParams{}
+		params.ID = uuid.New()
+		params.CreatedAt = time.Now()
+		params.UpdatedAt = time.Now()
+		params.FeedID = next.ID
+		params.Title = item.Title
+		params.Url = item.Link
+		params.Description = sql.NullString{
+			String: item.Description,
+			Valid:  item.Description != "",
+		}
+
+		parsedTime, err := time.Parse(time.RFC1123Z, item.PubDate)
+		if err != nil {
+			parsedTime, err = time.Parse(time.RFC1123, item.PubDate)
+		}
+		params.PublishedAt = sql.NullTime{
+			Time:  parsedTime,
+			Valid: err == nil,
+		}
+		_, err = s.db.CreatePost(context.Background(), params)
+		if err != nil {
+			if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+				// pqErr.Code is the Postgres error code
+				//The Postgres error code for a unique constraint violation (duplicate URL) is "23505"
+			} else {
+				fmt.Printf("error creating post: %v", err)
+			}
+		}
 	}
 	return nil
 }
