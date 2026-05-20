@@ -159,14 +159,8 @@ func HandlerAgg(s *state, c command) error {
 	return nil
 }
 
-func HandlerAddFeed(s *state, c command) error {
+func HandlerAddFeed(s *state, c command, current_user database.User) error {
 	// add a feed to the database
-
-	// get current user
-	current_user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return err
-	}
 
 	// add feed at url to feeds, under current user
 	// check that we've been given a name and url
@@ -196,6 +190,22 @@ func HandlerAddFeed(s *state, c command) error {
 	fmt.Printf("URL: %v\n", feed.Url)
 	fmt.Printf("UserID: %v\n", feed.UserID)
 
+	// create paramaters
+	follow_params := database.CreateFeedFollowsParams{}
+	follow_params.ID = uuid.New()
+	follow_params.CreatedAt = time.Now()
+	follow_params.UpdatedAt = time.Now()
+	follow_params.UserID = current_user.ID
+	follow_params.FeedID = feed.ID
+
+	// create feed follows record
+	_, err = s.db.CreateFeedFollows(context.Background(), follow_params)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Success! user %s is now following feed %s.", current_user.Name, feed.Name)
+
 	return nil
 }
 
@@ -214,4 +224,80 @@ func HandlerListFeeds(s *state, c command) error {
 		fmt.Printf("* %s | %s | %s\n", feeds[i].Name, feeds[i].Url, user.Name)
 	}
 	return nil
+}
+
+func HandlerFollow(s *state, c command, user database.User) error {
+	// takes single url arg and creates a new feed follow record for the current user
+	// check that we've been given a url
+	if len(c.args) != 1 {
+		return errors.New("follow takes one argument. Usage: gator follow <url>")
+	}
+
+	// get feed record
+	feed, err := s.db.GetFeedsURL(context.Background(), c.args[0])
+	if err != nil {
+		return err
+	}
+
+	// get current user
+	current_user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return err
+	}
+
+	// create paramaters
+	params := database.CreateFeedFollowsParams{}
+	params.ID = uuid.New()
+	params.CreatedAt = time.Now()
+	params.UpdatedAt = time.Now()
+	params.UserID = current_user.ID
+	params.FeedID = feed.ID
+
+	// create feed follows record
+	_, err = s.db.CreateFeedFollows(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Success! user %s is now following feed %s.", current_user.Name, feed.Name)
+
+	return nil
+}
+
+func HandlerFollowing(s *state, c command, user database.User) error {
+	// returns all feed follows for a given user
+
+	// get current user
+	current_user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return err
+	}
+
+	following, err := s.db.GetFeedFollowsForUser(context.Background(), current_user.ID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("user %s is following:\n", current_user.Name)
+
+	for _, record := range following {
+		fmt.Printf("%s\n", record.FeedName)
+	}
+	return nil
+}
+
+func MiddlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(*state, command) error {
+
+	return func(s *state, cmd command) error {
+		// get current user
+		current_user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+		if err != nil {
+			return err
+		}
+		err = handler(s, cmd, current_user)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 }

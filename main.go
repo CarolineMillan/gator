@@ -34,8 +34,10 @@ func main() {
 	err = cmds.Register("reset", cli.HandlerReset)
 	err = cmds.Register("users", cli.HandlerUsers)
 	err = cmds.Register("agg", cli.HandlerAgg)
-	err = cmds.Register("addfeed", cli.HandlerAddFeed)
+	err = cmds.Register("addfeed", cli.MiddlewareLoggedIn(cli.HandlerAddFeed))
 	err = cmds.Register("feeds", cli.HandlerListFeeds)
+	err = cmds.Register("follow", cli.MiddlewareLoggedIn(cli.HandlerFollow))
+	err = cmds.Register("following", cli.MiddlewareLoggedIn(cli.HandlerFollowing))
 
 	// get a handle on the args
 	args := os.Args
